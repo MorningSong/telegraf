@@ -5,7 +5,7 @@ go 1.17
 require (
 	cloud.google.com/go/bigquery v1.8.0
 	cloud.google.com/go/monitoring v1.2.0
-	cloud.google.com/go/pubsub v1.18.0
+	cloud.google.com/go/pubsub v1.19.0
 	collectd.org v0.5.0
 	github.com/Azure/azure-event-hubs-go/v3 v3.3.17
 	github.com/Azure/azure-kusto-go v0.5.2
@@ -146,12 +146,12 @@ require (
 	golang.org/x/net v0.0.0-20220127200216-cd36cc0744dd
 	golang.org/x/oauth2 v0.0.0-20211104180415-d3ed0bb246c8
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
-	golang.org/x/sys v0.0.0-20220128215802-99c3d69c2c27
+	golang.org/x/sys v0.0.0-20220209214540-3681064d5158
 	golang.org/x/text v0.3.7
 	golang.zx2c4.com/wireguard/wgctrl v0.0.0-20211230205640-daad0b7ba671
 	gonum.org/v1/gonum v0.11.0
-	google.golang.org/api v0.67.0
-	google.golang.org/genproto v0.0.0-20220207164111-0872dc986b00
+	google.golang.org/api v0.70.0
+	google.golang.org/genproto v0.0.0-20220222213610-43724f9ea8cf
 	google.golang.org/grpc v1.44.0
 	google.golang.org/protobuf v1.27.1
 	gopkg.in/gorethink/gorethink.v3 v3.0.5
@@ -166,7 +166,7 @@ require (
 
 require (
 	cloud.google.com/go v0.100.2 // indirect
-	cloud.google.com/go/compute v0.1.0 // indirect
+	cloud.google.com/go/compute v1.3.0 // indirect
 	cloud.google.com/go/iam v0.1.1 // indirect
 	code.cloudfoundry.org/clock v1.0.0 // indirect
 	github.com/Azure/azure-amqp-common-go/v3 v3.2.3 // indirect
