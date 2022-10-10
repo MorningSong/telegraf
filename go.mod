@@ -78,7 +78,7 @@ require (
 	github.com/google/go-github/v32 v32.1.0
 	github.com/google/licensecheck v0.3.1
 	github.com/google/uuid v1.3.0
-	github.com/gopcua/opcua v0.3.3
+	github.com/gopcua/opcua v0.3.7
 	github.com/gophercloud/gophercloud v0.25.0
 	github.com/gorilla/mux v1.8.0
 	github.com/gorilla/websocket v1.5.0
