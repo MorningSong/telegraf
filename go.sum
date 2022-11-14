@@ -1452,10 +1452,10 @@ github.com/influxdata/flux v0.65.1/go.mod h1:J754/zds0vvpfwuq7Gc2wRdVwEodfpCFM7m
 github.com/influxdata/go-syslog/v3 v3.0.0 h1:jichmjSZlYK0VMmlz+k4WeOQd7z745YLsvGMqwtYt4I=
 github.com/influxdata/go-syslog/v3 v3.0.0/go.mod h1:tulsOp+CecTAYC27u9miMgq21GqXRW6VdKbOG+QSP4Q=
 github.com/influxdata/influxdb v1.8.4/go.mod h1:JugdFhsvvI8gadxOI6noqNeeBHvWNTbfYGtiAn+2jhI=
-github.com/influxdata/influxdb-observability/common v0.2.30 h1:YMeCZBfr+9bR8M6milxA4dr/ZzSS7Hq9BzergXNBJIY=
-github.com/influxdata/influxdb-observability/common v0.2.30/go.mod h1:2Ha9T3itb6PAoUfJT7ImGO6tBv5+OPfYzqFeB8k+22k=
-github.com/influxdata/influxdb-observability/influx2otel v0.2.30 h1:WAoiVBv51IiGt0kwKVR7lrIJSR8x3eWn7wnWv04/aLw=
-github.com/influxdata/influxdb-observability/influx2otel v0.2.30/go.mod h1:bkpYXZYASorxW8l02p5IpCqe6nyUMafXrfXOCiDexFc=
+github.com/influxdata/influxdb-observability/common v0.2.31 h1:z7lbO9CqBAcQQVRknRYHgENL7+dRc8QyDt2PsI+7olM=
+github.com/influxdata/influxdb-observability/common v0.2.31/go.mod h1:Phi6IgmW6Hv+/+rQ8XWl0of5ph+KWRV0oh1w5MO4o/s=
+github.com/influxdata/influxdb-observability/influx2otel v0.2.31 h1:L9d9Kt0IgcRGRjtXmyCs/f86NiXAJ0CbVeVwvqLA/9Q=
+github.com/influxdata/influxdb-observability/influx2otel v0.2.31/go.mod h1:4FR9tN6fg/uqSaHEk0qwFIicG+L6CBlDQZWqcF3Ngbc=
 github.com/influxdata/influxdb-observability/otel2influx v0.2.30 h1:Mlb/zwPtfXthFfUsutXUtOiHhdAnUrzvcsqj6iK9eQ0=
 github.com/influxdata/influxdb-observability/otel2influx v0.2.30/go.mod h1:4AsRDILDSV5XoZ8Rm/n8W3CoOaZsMfOi77kXX1OebKk=
 github.com/influxdata/influxdb1-client v0.0.0-20191209144304-8bf82d3c094d/go.mod h1:qj24IKcXYK6Iy9ceXlo3Tc+vtHo9lIhSX5JddghvEPo=
@@ -2625,8 +2625,8 @@ go.opentelemetry.io/collector/pdata v0.52.0/go.mod h1:GJUTfTv8mlYpHRjcmHXVbvJr48
 go.opentelemetry.io/collector/pdata v0.54.0/go.mod h1:1nSelv/YqGwdHHaIKNW9ZOHSMqicDX7W4/7TjNCm6N8=
 go.opentelemetry.io/collector/pdata v0.56.0/go.mod h1:mYcCREWiIJyHss0dbU+GSiz2tmGZ6u09vtfkKTciog4=
 go.opentelemetry.io/collector/pdata v0.57.2/go.mod h1:RU9I8lwBUxucwOsSYzHEcHi15M9QaX78hgQ2PRdSxV0=
-go.opentelemetry.io/collector/pdata v0.63.0 h1:YPeMzF4OYFeMW6E+A/eQEv5s32wpc5wEa24H2PP5LeE=
-go.opentelemetry.io/collector/pdata v0.63.0/go.mod h1:IzvXUGQml2mrnvdb8zIlEW3qQs9oFLdD2hLwJdZ+pek=
+go.opentelemetry.io/collector/pdata v0.64.1 h1:8E06uHr0nnenGftFwhwdenA88QhVnF4dJam+qVXgdVg=
+go.opentelemetry.io/collector/pdata v0.64.1/go.mod h1:IzvXUGQml2mrnvdb8zIlEW3qQs9oFLdD2hLwJdZ+pek=
 go.opentelemetry.io/collector/semconv v0.52.0/go.mod h1:SxK0rUnUP7YeDakexzbE/vhimTOHwE6m/4aKKd9e27Q=
 go.opentelemetry.io/collector/semconv v0.54.0/go.mod h1:HAGkPKNMhc4kEHevEqVIEtUuvsRQMIbUWBb8yBrqEwk=
 go.opentelemetry.io/collector/semconv v0.56.0/go.mod h1:EH1wbDvTyqKpKBBpoMIe0KQk2plCcFS66Mo17WtR7CQ=
