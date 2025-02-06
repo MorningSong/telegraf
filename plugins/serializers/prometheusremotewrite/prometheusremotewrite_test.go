@@ -13,6 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/influxdata/telegraf"
+	"github.com/influxdata/telegraf/plugins/serializers"
 	"github.com/influxdata/telegraf/testutil"
 )
 
@@ -32,16 +33,16 @@ func BenchmarkRemoteWrite(b *testing.B) {
 			time.Unix(0, 0),
 		)
 	}
-	s := NewSerializer(FormatConfig{})
+	s := &Serializer{Log: &testutil.CaptureLogger{}}
 	for n := 0; n < b.N; n++ {
-		_, _ = s.SerializeBatch(batch)
+		//nolint:errcheck // Benchmarking so skip the error check to avoid the unnecessary operations
+		s.SerializeBatch(batch)
 	}
 }
 
 func TestRemoteWriteSerialize(t *testing.T) {
 	tests := []struct {
 		name     string
-		config   FormatConfig
 		metric   telegraf.Metric
 		expected []byte
 	}{
@@ -186,10 +187,10 @@ http_request_duration_seconds_bucket{le="0.5"} 129389
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			s := NewSerializer(FormatConfig{
-				MetricSortOrder: SortMetrics,
-				StringHandling:  tt.config.StringHandling,
-			})
+			s := &Serializer{
+				Log:         &testutil.CaptureLogger{},
+				SortMetrics: true,
+			}
 			data, err := s.Serialize(tt.metric)
 			require.NoError(t, err)
 			actual, err := prompbToText(data)
@@ -201,12 +202,84 @@ http_request_duration_seconds_bucket{le="0.5"} 129389
 	}
 }
 
+func TestRemoteWriteSerializeNegative(t *testing.T) {
+	clog := &testutil.CaptureLogger{}
+	s := &Serializer{Log: clog}
+
+	assert := func(msg string, err error) {
+		t.Helper()
+		require.NoError(t, err)
+
+		lastMsg := clog.LastError()
+		require.NotEmpty(t, lastMsg, "expected non-empty last message")
+		require.Contains(t, lastMsg, msg, "unexpected log message")
+
+		// reset logger so it can be reused again
+		clog.Clear()
+	}
+
+	m := testutil.MustMetric("@@!!", nil, map[string]interface{}{"!!": "@@"}, time.Unix(0, 0))
+	_, err := s.Serialize(m)
+	assert("failed to parse \"@@!!_!!\"", err)
+
+	m = testutil.MustMetric("prometheus", nil,
+		map[string]interface{}{
+			"http_requests_total": "asd",
+		},
+		time.Unix(0, 0),
+	)
+	_, err = s.Serialize(m)
+	assert("bad sample", err)
+
+	m = testutil.MustMetric(
+		"prometheus",
+		map[string]string{
+			"le": "0.5",
+		},
+		map[string]interface{}{
+			"http_request_duration_seconds_bucket": "asd",
+		},
+		time.Unix(0, 0),
+		telegraf.Histogram,
+	)
+	_, err = s.Serialize(m)
+	assert("bad sample", err)
+
+	m = testutil.MustMetric(
+		"prometheus",
+		map[string]string{
+			"code":   "400",
+			"method": "post",
+		},
+		map[string]interface{}{
+			"http_requests_total":        3.0,
+			"http_requests_errors_total": "3.0",
+		},
+		time.Unix(0, 0),
+		telegraf.Gauge,
+	)
+	_, err = s.Serialize(m)
+	assert("bad sample", err)
+
+	m = testutil.MustMetric(
+		"prometheus",
+		map[string]string{"quantile": "0.01a"},
+		map[string]interface{}{
+			"rpc_duration_seconds": 3102.0,
+		},
+		time.Unix(0, 0),
+		telegraf.Summary,
+	)
+	_, err = s.Serialize(m)
+	assert("failed to parse", err)
+}
+
 func TestRemoteWriteSerializeBatch(t *testing.T) {
 	tests := []struct {
-		name     string
-		config   FormatConfig
-		metrics  []telegraf.Metric
-		expected []byte
+		name          string
+		metrics       []telegraf.Metric
+		stringAsLabel bool
+		expected      []byte
 	}{
 		{
 			name: "simple",
@@ -515,11 +588,8 @@ cpu_time_idle 42
 `),
 		},
 		{
-			name: "string as label",
-			config: FormatConfig{
-				MetricSortOrder: SortMetrics,
-				StringHandling:  StringAsLabel,
-			},
+			name:          "string as label",
+			stringAsLabel: true,
 			metrics: []telegraf.Metric{
 				testutil.MustMetric(
 					"cpu",
@@ -536,11 +606,8 @@ cpu_time_idle{cpu="cpu0"} 42
 `),
 		},
 		{
-			name: "string as label duplicate tag",
-			config: FormatConfig{
-				MetricSortOrder: SortMetrics,
-				StringHandling:  StringAsLabel,
-			},
+			name:          "string as label duplicate tag",
+			stringAsLabel: true,
 			metrics: []telegraf.Metric{
 				testutil.MustMetric(
 					"cpu",
@@ -559,11 +626,8 @@ cpu_time_idle{cpu="cpu0"} 42
 `),
 		},
 		{
-			name: "replace characters when using string as label",
-			config: FormatConfig{
-				MetricSortOrder: SortMetrics,
-				StringHandling:  StringAsLabel,
-			},
+			name:          "replace characters when using string as label",
+			stringAsLabel: true,
 			metrics: []telegraf.Metric{
 				testutil.MustMetric(
 					"cpu",
@@ -666,11 +730,8 @@ rpc_duration_seconds_sum 17560473
 `),
 		},
 		{
-			name: "empty label string value",
-			config: FormatConfig{
-				MetricSortOrder: SortMetrics,
-				StringHandling:  StringAsLabel,
-			},
+			name:          "empty label string value",
+			stringAsLabel: true,
 			metrics: []telegraf.Metric{
 				testutil.MustMetric(
 					"prometheus",
@@ -690,10 +751,11 @@ rpc_duration_seconds_sum 17560473
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			s := NewSerializer(FormatConfig{
-				MetricSortOrder: SortMetrics,
-				StringHandling:  tt.config.StringHandling,
-			})
+			s := &Serializer{
+				Log:           &testutil.CaptureLogger{},
+				SortMetrics:   true,
+				StringAsLabel: tt.stringAsLabel,
+			}
 			data, err := s.SerializeBatch(tt.metrics)
 			require.NoError(t, err)
 			actual, err := prompbToText(data)
@@ -719,14 +781,9 @@ func prompbToText(data []byte) ([]byte, error) {
 	}
 	samples := protoToSamples(&req)
 	for _, sample := range samples {
-		_, err = buf.Write([]byte(fmt.Sprintf("%s %s\n", sample.Metric.String(), sample.Value.String())))
-		if err != nil {
-			return nil, err
-		}
+		buf.WriteString(fmt.Sprintf("%s %s\n", sample.Metric.String(), sample.Value.String()))
 	}
-	if err != nil {
-		return nil, err
-	}
+
 	return buf.Bytes(), nil
 }
 
@@ -747,4 +804,25 @@ func protoToSamples(req *prompb.WriteRequest) model.Samples {
 		}
 	}
 	return samples
+}
+
+func BenchmarkSerialize(b *testing.B) {
+	s := &Serializer{Log: &testutil.CaptureLogger{}}
+	metrics := serializers.BenchmarkMetrics(b)
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, err := s.Serialize(metrics[i%len(metrics)])
+		require.NoError(b, err)
+	}
+}
+
+func BenchmarkSerializeBatch(b *testing.B) {
+	s := &Serializer{Log: &testutil.CaptureLogger{}}
+	m := serializers.BenchmarkMetrics(b)
+	metrics := m[:]
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, err := s.SerializeBatch(metrics)
+		require.NoError(b, err)
+	}
 }

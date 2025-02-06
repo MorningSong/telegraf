@@ -11,13 +11,14 @@ import (
 
 	"github.com/influxdata/telegraf"
 	"github.com/influxdata/telegraf/filter"
+	"github.com/influxdata/telegraf/plugins/serializers"
 )
 
 const DefaultTemplate = "host.tags.measurement.field"
 
 var (
-	compatibleAllowedCharsName  = regexp.MustCompile(`[^ "-:\<>-\]_a-~\p{L}]`)
-	compatibleAllowedCharsValue = regexp.MustCompile(`[^ -:<-~\p{L}]`)
+	compatibleAllowedCharsName  = regexp.MustCompile(`[^ "-:\<>-\]_a-~\p{L}]`) //nolint:gocritic  // valid range for use-case
+	compatibleAllowedCharsValue = regexp.MustCompile(`[^ -:<-~\p{L}]`)         //nolint:gocritic  // valid range for use-case
 	compatibleLeadingTildeDrop  = regexp.MustCompile(`^[~]*(.*)`)
 	hyphenChars                 = strings.NewReplacer(
 		"/", "-",
@@ -38,21 +39,52 @@ type GraphiteTemplate struct {
 }
 
 type GraphiteSerializer struct {
-	Prefix             string              `json:"prefix"`
-	Template           string              `json:"template"`
-	StrictAllowedChars *regexp.Regexp      `json:"graphite_strict_sanitize_regex"`
-	TagSupport         bool                `json:"graphite_tag_support"`
-	TagSanitizeMode    string              `json:"graphite_tag_sanitize_mode"`
-	Separator          string              `json:"graphite_separator"`
-	Templates          []*GraphiteTemplate `json:"templates"`
+	Prefix          string   `toml:"prefix"`
+	Template        string   `toml:"template"`
+	StrictRegex     string   `toml:"graphite_strict_sanitize_regex"`
+	TagSupport      bool     `toml:"graphite_tag_support"`
+	TagSanitizeMode string   `toml:"graphite_tag_sanitize_mode"`
+	Separator       string   `toml:"graphite_separator"`
+	Templates       []string `toml:"templates"`
+
+	tmplts             []*GraphiteTemplate
+	strictAllowedChars *regexp.Regexp
+}
+
+func (s *GraphiteSerializer) Init() error {
+	graphiteTemplates, defaultTemplate, err := InitGraphiteTemplates(s.Templates)
+	if err != nil {
+		return err
+	}
+	s.tmplts = graphiteTemplates
+
+	if defaultTemplate != "" {
+		s.Template = defaultTemplate
+	}
+
+	if s.TagSanitizeMode == "" {
+		s.TagSanitizeMode = "strict"
+	}
+
+	if s.Separator == "" {
+		s.Separator = "."
+	}
+
+	if s.StrictRegex == "" {
+		s.strictAllowedChars = regexp.MustCompile(`[^a-zA-Z0-9-:._=\p{L}]`)
+	} else {
+		var err error
+		s.strictAllowedChars, err = regexp.Compile(s.StrictRegex)
+		if err != nil {
+			return fmt.Errorf("invalid regex provided %q: %w", s.StrictRegex, err)
+		}
+	}
+
+	return nil
 }
 
 func (s *GraphiteSerializer) Serialize(metric telegraf.Metric) ([]byte, error) {
-	if s.StrictAllowedChars == nil {
-		s.StrictAllowedChars = regexp.MustCompile(`[^a-zA-Z0-9-:._=\p{L}]`)
-	}
-
-	out := []byte{}
+	var out []byte
 
 	// Convert UnixNano to Unix timestamps
 	timestamp := metric.Time().UnixNano() / 1000000000
@@ -68,7 +100,7 @@ func (s *GraphiteSerializer) Serialize(metric telegraf.Metric) ([]byte, error) {
 			metricString := fmt.Sprintf("%s %s %d\n",
 				// insert "field" section of template
 				bucket,
-				//bucket,
+				// bucket,
 				fieldValue,
 				timestamp)
 			point := []byte(metricString)
@@ -76,7 +108,7 @@ func (s *GraphiteSerializer) Serialize(metric telegraf.Metric) ([]byte, error) {
 		}
 	default:
 		template := s.Template
-		for _, graphiteTemplate := range s.Templates {
+		for _, graphiteTemplate := range s.tmplts {
 			if graphiteTemplate.Filter.Match(metric.Name()) {
 				template = graphiteTemplate.Value
 				break
@@ -112,10 +144,7 @@ func (s *GraphiteSerializer) SerializeBatch(metrics []telegraf.Metric) ([]byte, 
 		if err != nil {
 			return nil, err
 		}
-		_, err = batch.Write(buf)
-		if err != nil {
-			return nil, err
-		}
+		batch.Write(buf)
 	}
 	return batch.Bytes(), nil
 }
@@ -155,12 +184,7 @@ func formatValue(value interface{}) string {
 // FIELDNAME. It is up to the user to replace this. This is so that
 // SerializeBucketName can be called just once per measurement, rather than
 // once per field. See GraphiteSerializer.InsertField() function.
-func SerializeBucketName(
-	measurement string,
-	tags map[string]string,
-	template string,
-	prefix string,
-) string {
+func SerializeBucketName(measurement string, tags map[string]string, template, prefix string) string {
 	if template == "" {
 		template = DefaultTemplate
 	}
@@ -249,14 +273,7 @@ func InitGraphiteTemplates(templates []string) ([]*GraphiteTemplate, string, err
 // SerializeBucketNameWithTags will take the given measurement name and tags and
 // produce a graphite bucket. It will use the Graphite11Serializer.
 // http://graphite.readthedocs.io/en/latest/tags.html
-func (s *GraphiteSerializer) SerializeBucketNameWithTags(
-	measurement string,
-	tags map[string]string,
-	prefix string,
-	separator string,
-	field string,
-	tagSanitizeMode string,
-) string {
+func (s *GraphiteSerializer) SerializeBucketNameWithTags(measurement string, tags map[string]string, prefix, separator, field, tagSanitizeMode string) string {
 	var out string
 	var tagsCopy []string
 	for k, v := range tags {
@@ -326,12 +343,20 @@ func (s *GraphiteSerializer) strictSanitize(value string) string {
 	// Apply rule to drop some chars to preserve backwards compatibility
 	value = dropChars.Replace(value)
 	// Replace any remaining illegal chars
-	return s.StrictAllowedChars.ReplaceAllLiteralString(value, "_")
+	return s.strictAllowedChars.ReplaceAllLiteralString(value, "_")
 }
 
-func compatibleSanitize(name string, value string) string {
+func compatibleSanitize(name, value string) string {
 	name = compatibleAllowedCharsName.ReplaceAllLiteralString(name, "_")
 	value = compatibleAllowedCharsValue.ReplaceAllLiteralString(value, "_")
 	value = compatibleLeadingTildeDrop.FindStringSubmatch(value)[1]
 	return name + "=" + value
+}
+
+func init() {
+	serializers.Add("graphite",
+		func() telegraf.Serializer {
+			return &GraphiteSerializer{}
+		},
+	)
 }
