@@ -1,28 +1,25 @@
-# Conntrack Input Plugin
+# Netfilter Conntrack Input Plugin
 
-Collects stats from Netfilter's conntrack-tools.
+This plugin collects metrics from [Netfilter's conntrack tools][conntrack].
+There are two collection mechanisms for this plugin:
 
-The conntrack-tools provide a mechanism for tracking various aspects of
-network connections as they are processed by netfilter. At runtime,
-conntrack exposes many of those connection statistics within `/proc/sys/net`.
-Depending on your kernel version, these files can be found in either
-`/proc/sys/net/ipv4/netfilter` or `/proc/sys/net/netfilter` and will be
-prefixed with either `ip` or `nf`.  This plugin reads the files specified
-in its configuration and publishes each one as a field, with the prefix
-normalized to ip_.
-conntrack exposes many of those connection statistics within `/proc/sys/net`.
-Depending on your kernel version, these files can be found in either
-`/proc/sys/net/ipv4/netfilter` or `/proc/sys/net/netfilter` and will be
-prefixed with either `ip_` or `nf_`.  This plugin reads the files specified
-in its configuration and publishes each one as a field, with the prefix
-normalized to `ip_`.
+1. Extracting information from `/proc/net/stat/nf_conntrack` files if the
+   `collect` option is set accordingly for finding CPU specific values.
+2. Using specific files and directories by specifying the `dirs` option. At
+   runtime, conntrack exposes many of those connection statistics within
+   `/proc/sys/net`. Depending on your kernel version, these files can be found
+   in either `/proc/sys/net/ipv4/netfilter` or `/proc/sys/net/netfilter` and
+   will be prefixed with either `ip` or `nf`.
 
 In order to simplify configuration in a heterogeneous environment, a superset
-of directory and filenames can be specified.  Any locations that don't exist
-will be ignored.
+of directory and filenames can be specified. Any locations that doesn't exist
+is ignored.
 
-For more information on conntrack-tools, see the
-[Netfilter Documentation](http://conntrack-tools.netfilter.org/).
+⭐ Telegraf v1.0.0
+🏷️ system
+💻 linux
+
+[conntrack]: https://conntrack-tools.netfilter.org/
 
 ## Global configuration options <!-- @/docs/includes/plugin_config.md -->
 
@@ -43,17 +40,20 @@ See the [CONFIGURATION.md][CONFIGURATION.md] for more details.
   ## Note the nf_ and ip_ filename prefixes are mutually exclusive across
   ## kernel versions, as are the directory locations.
 
+  ## Look through /proc/net/stat/nf_conntrack for these metrics
+  ## all - aggregated statistics
+  ## percpu - include detailed statistics with cpu tag
+  collect = ["all", "percpu"]
+
+  ## User-specified directories and files to look through
+  ## Directories to search within for the conntrack files above.
+  ## Missing directories will be ignored.
+  dirs = ["/proc/sys/net/ipv4/netfilter","/proc/sys/net/netfilter"]
+
   ## Superset of filenames to look for within the conntrack dirs.
   ## Missing files will be ignored.
   files = ["ip_conntrack_count","ip_conntrack_max",
           "nf_conntrack_count","nf_conntrack_max"]
-
-  ## Directories to search within for the conntrack files above.
-  ## Missing directories will be ignored.
-  dirs = ["/proc/sys/net/ipv4/netfilter","/proc/sys/net/netfilter"]
-  ## all - aggregated statistics
-  ## percpu - include detailed statistics with cpu tag
-  collect = ["all", "percpu"]
 ```
 
 ## Metrics
@@ -79,9 +79,10 @@ With `collect = ["all"]`:
 - `delete`: The number of entries which were removed
 - `delete_list`: The number of entries which were put to dying list
 - `insert`: The number of entries inserted into the list
-- `insert_failed`: The number of insertion attempted but failed (same entry exists)
+- `insert_failed`: The number of insertion attempted but failed (duplicate entry)
 - `drop`: The number of packets dropped due to conntrack failure
-- `early_drop`: The number of dropped entries to make room for new ones, if maxsize reached
+- `early_drop`: The number of dropped entries to make room for new ones, if
+                `maxsize` is reached
 - `icmp_error`: Subset of invalid. Packets that can't be tracked due to error
 - `expect_new`: Entries added after an expectation was already present
 - `expect_create`: Expectations added

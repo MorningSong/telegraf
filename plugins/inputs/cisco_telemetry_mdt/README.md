@@ -1,16 +1,20 @@
 # Cisco Model-Driven Telemetry (MDT) Input Plugin
 
-Cisco model-driven telemetry (MDT) is an input plugin that consumes telemetry
-data from Cisco IOS XR, IOS XE and NX-OS platforms. It supports TCP & GRPC
-dialout transports.  RPC-based transport can utilize TLS for authentication and
-encryption.  Telemetry data is expected to be GPB-KV (self-describing-gpb)
-encoded.
+This plugin consumes [Cisco model-driven telemetry (MDT)][cisco_mdt] data from
+Cisco IOS XR, IOS XE and NX-OS platforms via TCP or GRPC. GRPC-based transport
+can utilize TLS for authentication and encryption. Telemetry data is expected to
+be GPB-KV (self-describing-gpb) encoded.
 
 The GRPC dialout transport is supported on various IOS XR (64-bit) 6.1.x and
-later, IOS XE 16.10 and later, as well as NX-OS 7.x and later platforms.
-
-The TCP dialout transport is supported on IOS XR (32-bit and 64-bit) 6.1.x and
+later, IOS XE 16.10 and later, as well as NX-OS 7.x and later platforms. The
+TCP dialout transport is supported on IOS XR (32-bit and 64-bit) 6.1.x and
 later.
+
+⭐ Telegraf v1.11.0
+🏷️ applications
+💻 all
+
+[cisco_mdt]: https://www.cisco.com/c/en/us/products/collateral/switches/catalyst-9300-series-switches/model-driven-telemetry-wp.html
 
 ## Service Input <!-- @/docs/includes/service_input.md -->
 
@@ -44,7 +48,8 @@ See the [CONFIGURATION.md][CONFIGURATION.md] for more details.
  ## Address and port to host telemetry listener
  service_address = ":57000"
 
- ## Grpc Maximum Message Size, default is 4MB, increase the size.
+ ## Grpc Maximum Message Size, default is 4MB, increase the size. This is
+ ## stored as a uint32, and limited to 4294967295.
  max_msg_size = 4000000
 
  ## Enable TLS; grpc transport only.
@@ -58,8 +63,11 @@ See the [CONFIGURATION.md][CONFIGURATION.md] for more details.
  ## Define (for certain nested telemetry measurements with embedded tags) which fields are tags
  # embedded_tags = ["Cisco-IOS-XR-qos-ma-oper:qos/interface-table/interface/input/service-policy-names/service-policy-instance/statistics/class-stats/class-name"]
 
-  ## Include the delete field in every telemetry message.
-  # include_delete_field = false
+ ## Include the delete field in every telemetry message.
+ # include_delete_field = false
+
+ ## Specify custom name for incoming MDT source field.
+ # source_field_name = "mdt_source"
 
  ## Define aliases to map telemetry encoding paths to simple measurement names
  [inputs.cisco_telemetry_mdt.aliases]
@@ -154,4 +162,5 @@ multicast pim    NXAPI         show ip pim route vrf all
 multicast pim    NXAPI         show ip pim rp vrf all
 multicast pim    NXAPI         show ip pim statistics vrf all
 multicast pim    NXAPI         show ip pim vrf all
+microburst       NATIVE        path microburst
 ```

@@ -1,16 +1,20 @@
 # MQTT Producer Output Plugin
 
-This plugin writes to a [MQTT Broker](http://http://mqtt.org/) acting as a mqtt
-Producer. It supports MQTT protocols `3.1.1` and `5`.
+This plugin writes metrics to a [MQTT broker][mqtt] acting as a MQTT producer.
+The plugin supports the MQTT protocols `3.1.1` and `5`.
 
-## Mosquitto v2.0.12+ and `identifier rejected`
+> [!NOTE]
+> In v2.0.12+ of the mosquitto MQTT server, there is a [bug][mosquitto_bug]
+> requiring the `keep_alive` value to be set non-zero in Telegraf. Otherwise,
+> the server will return with `identifier rejected`.
+> As a reference `eclipse/paho.golang` sets the `keep_alive` to 30.
 
-In v2.0.12+ of the mosquitto MQTT server, there is a
-[bug](https://github.com/eclipse/mosquitto/issues/2117) which requires the
-`keep_alive` value to be set non-zero in your telegraf configuration. If not
-set, the server will return with `identifier rejected`.
+⭐ Telegraf v0.2.0
+🏷️ messaging
+💻 all
 
-As a reference `eclipse/paho.golang` sets the `keep_alive` to 30.
+[mqtt]: http://http://mqtt.org/
+[mosquitto_bug]: https://github.com/eclipse/mosquitto/issues/2117
 
 ## Global configuration options <!-- @/docs/includes/plugin_config.md -->
 
@@ -44,15 +48,16 @@ to use them.
   servers = ["localhost:1883", ] # or ["mqtts://tls.example.com:1883"]
 
   ## Protocol can be `3.1.1` or `5`. Default is `3.1.1`
-  # procotol = "3.1.1"
+  # protocol = "3.1.1"
 
   ## MQTT Topic for Producer Messages
   ## MQTT outputs send metrics to this topic format:
   ## {{ .TopicPrefix }}/{{ .Hostname }}/{{ .PluginName }}/{{ .Tag "tag_key" }}
   ## (e.g. prefix/web01.example.com/mem/some_tag_value)
   ## Each path segment accepts either a template placeholder, an environment variable, or a tag key
-  ## of the form `{{.Tag "tag_key_name"}}`. Empty path elements as well as special MQTT characters
-  ## (such as `+` or `#`) are invalid to form the topic name and will lead to an error.
+  ## of the form `{{.Tag "tag_key_name"}}`. All the functions provided by the Sprig library
+  ## (http://masterminds.github.io/sprig/) are available. Empty path elements as well as special MQTT
+  ## characters (such as `+` or `#`) are invalid to form the topic name and will lead to an error.
   ## In case a tag is missing in the metric, that path segment omitted for the final topic.
   topic = "telegraf/{{ .Hostname }}/{{ .PluginName }}"
 
@@ -102,6 +107,12 @@ to use them.
   ## actually reads it
   # retain = false
 
+  ## Client trace messages
+  ## When set to true, and debug mode enabled in the agent settings, the MQTT
+  ## client's messages are included in telegraf logs. These messages are very
+  ## noisey, but essential for debugging issues.
+  # client_trace = false
+
   ## Layout of the topics published.
   ## The following choices are available:
   ##   non-batch -- send individual messages, one for each metric
@@ -124,6 +135,10 @@ to use them.
   ## more about them here:
   ## https://github.com/influxdata/telegraf/blob/master/docs/DATA_FORMATS_OUTPUT.md
   data_format = "influx"
+
+  ## NOTE: Due to the way TOML is parsed, tables must be at the END of the
+  ## plugin definition, otherwise additional config options are read as part of
+  ## the table
 
   ## Optional MQTT 5 publish properties
   ## These setting only apply if the "protocol" property is set to 5. This must
@@ -186,6 +201,7 @@ while `homie_node_id` will provide a template for the `node-id` part of the
 topic. Both options can contain [Go templates][GoTemplates] similar to `topic`
 with `{{ .PluginName }}` referencing the metric name and `{{ .Tag "key"}}`
 referencing the tag with the name `key`.
+[Sprig](http://masterminds.github.io/sprig/) helper functions are available.
 
 For example writing the metrics
 

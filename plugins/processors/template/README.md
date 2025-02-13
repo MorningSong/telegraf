@@ -7,6 +7,7 @@ routing option.
 
 The template has access to each metric's measurement name, tags, fields, and
 timestamp using the [interface in `/template_metric.go`](template_metric.go).
+[Sprig](http://masterminds.github.io/sprig/) helper functions are available.
 
 Read the full [Go Template Documentation][].
 
@@ -24,12 +25,14 @@ See the [CONFIGURATION.md][CONFIGURATION.md] for more details.
 ```toml @sample.conf
 # Uses a Go template to create a new tag
 [[processors.template]]
-  ## Tag to set with the output of the template.
+  ## Go template used to create the tag name of the output. In order to
+  ## ease TOML escaping requirements, you should use single quotes around
+  ## the template string.
   tag = "topic"
 
-  ## Go template used to create the tag value.  In order to ease TOML
-  ## escaping requirements, you may wish to use single quotes around the
-  ## template string.
+  ## Go template used to create the tag value of the output. In order to
+  ## ease TOML escaping requirements, you should use single quotes around
+  ## the template string.
   template = '{{ .Tag "hostname" }}.{{ .Tag "level" }}'
 ```
 
@@ -46,6 +49,19 @@ See the [CONFIGURATION.md][CONFIGURATION.md] for more details.
 ```diff
 - cpu,level=debug,hostname=localhost time_idle=42
 + cpu,level=debug,hostname=localhost,topic=localhost.debug time_idle=42
+```
+
+### Use a field value as tag name
+
+```toml
+[[processors.template]]
+  tag = '{{ .Field "type" }}'
+  template = '{{ .Name }}'
+```
+
+```diff
+- cpu,level=debug,hostname=localhost time_idle=42,type=sensor
++ cpu,level=debug,hostname=localhost,sensor=cpu time_idle=42,type=sensor
 ```
 
 ### Add measurement name as a tag
@@ -71,14 +87,14 @@ See the [CONFIGURATION.md][CONFIGURATION.md] for more details.
 
 ### Add all fields as a tag
 
-Sometimes it is usefull to pass all fields with their values into a single
+Sometimes it is useful to pass all fields with their values into a single
 message for sending it to a monitoring system (e.g. Syslog, GroundWork), then
-you can use `.FieldList` or `.TagList`:
+you can use `.Fields` or `.Tags`:
 
 ```toml
 [[processors.template]]
   tag = "message"
-  template = 'Message about {{.Name}} fields: {{.FieldList}}'
+  template = 'Message about {{.Name}} fields: {{.Fields}}'
 ```
 
 ```diff
@@ -92,7 +108,7 @@ More advanced example, which might make more sense:
 [[processors.template]]
   tag = "message"
   template = '''Message about {{.Name}} fields:
-{{ range $field, $value := .FieldList -}}
+{{ range $field, $value := .Fields -}}
 {{$field}}:{{$value}}
 {{ end }}'''
 ```

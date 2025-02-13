@@ -1,7 +1,14 @@
 # Prometheus Output Plugin
 
-This plugin starts a [Prometheus](https://prometheus.io/) Client, it exposes all
-metrics on `/metrics` (default) to be polled by a Prometheus server.
+This plugin starts a [Prometheus][prometheus] client and exposes the written
+metrics on a `/metrics` endpoint by default. This endpoint can then be polled
+by a Prometheus server.
+
+⭐ Telegraf v0.2.1
+🏷️ applications
+💻 all
+
+[prometheus]: https://prometheus.io
 
 ## Global configuration options <!-- @/docs/includes/plugin_config.md -->
 
@@ -12,12 +19,23 @@ See the [CONFIGURATION.md][CONFIGURATION.md] for more details.
 
 [CONFIGURATION.md]: ../../../docs/CONFIGURATION.md#plugins
 
+## Secret-store support
+
+This plugin supports secrets from secret-stores for the `basic_password` option.
+See the [secret-store documentation][SECRETSTORE] for more details on how
+to use them.
+
+[SECRETSTORE]: ../../../docs/CONFIGURATION.md#secret-store-secrets
+
 ## Configuration
 
 ```toml @sample.conf
 # Configuration for the Prometheus client to spawn
 [[outputs.prometheus_client]]
   ## Address to listen on.
+  ##   ex:
+  ##     listen = ":9273"
+  ##     listen = "vsock://:9273"
   listen = ":9273"
 
   ## Maximum duration before timing out read of the request
@@ -62,6 +80,12 @@ See the [CONFIGURATION.md][CONFIGURATION.md] for more details.
 
   ## Export metric collection time.
   # export_timestamp = false
+
+  ## Specify the metric type explicitly.
+  ## This overrides the metric-type of the Telegraf metric. Globbing is allowed.
+  # [outputs.prometheus_client.metric_types]
+  #   counter = []
+  #   gauge = []
 ```
 
 ## Metrics
