@@ -124,7 +124,7 @@ require (
 	github.com/influxdata/influxdb-observability/influx2otel v0.5.12
 	github.com/influxdata/influxdb-observability/otel2influx v0.5.12
 	github.com/influxdata/line-protocol/v2 v2.2.1
-	github.com/influxdata/tail v1.0.1-0.20241014115250-3e0015cb677a
+	github.com/influxdata/tail v2.10.6-bug100770-inotify-leak+incompatible
 	github.com/influxdata/toml v0.0.0-20190415235208-270119a8ce65
 	github.com/intel/iaevents v1.1.0
 	github.com/intel/powertelemetry v1.0.2
@@ -253,6 +253,11 @@ require (
 	layeh.com/radius v0.0.0-20221205141417-e7fbddd11d68
 	modernc.org/sqlite v1.39.0
 	software.sslmate.com/src/go-pkcs12 v0.6.0
+)
+
+require (
+	github.com/howeyc/fsnotify v0.9.0 // indirect
+	launchpad.net/tomb v0.0.0-20140529072043-000000000018 // indirect
 )
 
 require (
@@ -563,7 +568,6 @@ require (
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250825161204-c5933d9347a5 // indirect
 	gopkg.in/evanphx/json-patch.v4 v4.12.0 // indirect
 	gopkg.in/fatih/pool.v2 v2.0.0 // indirect
-	gopkg.in/fsnotify.v1 v1.4.7 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1 // indirect
